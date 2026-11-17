@@ -6,10 +6,14 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
+    "build": "vite build",
     "dev": "node server.js"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "keywords": ["threejs", "audio-visualizer", "youtube", "webgl", "video-export"],
-  "author": "",
+  "author": "Caio Caso",
   "license": "MIT",
   "dependencies": {
     "@distube/ytdl-core": "^5.2.1",

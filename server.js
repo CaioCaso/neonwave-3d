@@ -4,6 +4,7 @@ import { createServer as createViteServer } from 'vite';
 import { Ytdl, chooseFormat } from '@distube/ytdl-core';
 import https from 'https';
 import http from 'http';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -290,15 +291,26 @@ app.get('/api/demos', (req, res) => {
   ]);
 });
 
-// Setup Vite development & serving middleware
+// Setup Vite development or production static serving
 async function startServer() {
-  const vite = await createViteServer({
-    server: { middlewareMode: true },
-    appType: 'spa',
-    root: __dirname
-  });
+  const isProduction = process.env.NODE_ENV === 'production' || (!process.env.VITE_DEV && fs.existsSync(path.join(__dirname, 'dist', 'index.html')));
 
-  app.use(vite.middlewares);
+  if (isProduction && !process.env.VITE_DEV) {
+    console.log('[Server] Rodando em modo PRODUÇÃO (arquivos estáticos em /dist)');
+    app.use(express.static(path.join(__dirname, 'dist')));
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api')) return next();
+      res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+    });
+  } else {
+    console.log('[Server] Rodando em modo DESENVOLVIMENTO (Vite middleware)');
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+      root: __dirname
+    });
+    app.use(vite.middlewares);
+  }
 
   const server = app.listen(PORT, () => {
     console.log(`=====================================================`);
