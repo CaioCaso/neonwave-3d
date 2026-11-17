@@ -285,6 +285,8 @@ async function loadYouTubeTrack(url) {
 
 youtubeForm.addEventListener('submit', (e) => {
   e.preventDefault();
+  // Resume/create Web Audio directly inside the user gesture for Chrome autoplay policy.
+  audioManager.ensureContext();
   loadYouTubeTrack(youtubeUrlInput.value);
 });
 
@@ -643,5 +645,3 @@ function animate() {
 animate();
 
 console.log('Neonwave 3D Visualizer & Lyric Studio inicializado.');
-audioManager.playProceduralDemo('synthwave');
-updatePlayPauseIcons(true);
