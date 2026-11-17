@@ -239,11 +239,12 @@ function updateTrackHUD(title, artist, thumb, duration = 0) {
 
 // ----------------- YOUTUBE LOADER -----------------
 async function loadYouTubeTrack(url) {
-  if (!url || !url.trim()) return;
+  if (!url || !url.trim() || btnLoadYoutube.disabled) return;
 
   loadBtnText.textContent = 'Carregando...';
   loadSpinner.classList.remove('hidden');
   btnLoadYoutube.disabled = true;
+  btnPlayPause.disabled = true;
 
   // LIMPEZA IMEDIATA: reseta a letra antiga assim que um novo link é enviado!
   lyricsOffset = 0;
@@ -269,9 +270,8 @@ async function loadYouTubeTrack(url) {
     fetchLyricsForTrack(info.title, info.author);
 
     const streamUrl = `/api/stream?url=${encodeURIComponent(url.trim())}`;
-    await audioManager.loadUrl(streamUrl);
-
-    updatePlayPauseIcons(true);
+    const playbackStarted = await audioManager.loadUrl(streamUrl);
+    if (playbackStarted) updatePlayPauseIcons(true);
   } catch (error) {
     console.error('Falha ao carregar YouTube:', error);
     alert(`Erro ao processar link do YouTube: ${error.message}\n\nDica: você também pode usar o botão "Subir Áudio" ou testar as "Músicas Demo"!`);
@@ -279,6 +279,7 @@ async function loadYouTubeTrack(url) {
     loadBtnText.textContent = 'Carregar';
     loadSpinner.classList.add('hidden');
     btnLoadYoutube.disabled = false;
+    btnPlayPause.disabled = false;
   }
 }
 

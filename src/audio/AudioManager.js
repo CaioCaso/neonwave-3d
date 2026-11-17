@@ -58,6 +58,7 @@ export class AudioManager {
     this.onTrackEnded = null;
     this.onTimeUpdate = null;
     this.onTrackLoaded = null;
+    this.mediaLoadId = 0;
 
     this._setupAudioElementEvents();
   }
@@ -117,20 +118,39 @@ export class AudioManager {
   }
 
   async loadUrl(url) {
+    const loadId = ++this.mediaLoadId;
     this.stopSynth();
     this.ensureContext();
     this.audioElement.pause();
     this.audioElement.src = url;
-    await this.audioElement.play();
+    this.audioElement.load();
+
+    try {
+      await this.audioElement.play();
+      return loadId === this.mediaLoadId;
+    } catch (error) {
+      // A newer track or an intentional pause can cancel a pending play request.
+      if (loadId !== this.mediaLoadId) return false;
+      throw error;
+    }
   }
 
   async loadLocalFile(file) {
+    const loadId = ++this.mediaLoadId;
     this.stopSynth();
     this.ensureContext();
     const objectUrl = URL.createObjectURL(file);
     this.audioElement.pause();
     this.audioElement.src = objectUrl;
-    await this.audioElement.play();
+    this.audioElement.load();
+
+    try {
+      await this.audioElement.play();
+      return loadId === this.mediaLoadId;
+    } catch (error) {
+      if (loadId !== this.mediaLoadId) return false;
+      throw error;
+    }
   }
 
   play() {
@@ -140,6 +160,7 @@ export class AudioManager {
   }
 
   pause() {
+    this.mediaLoadId++;
     if (this.isSynthRunning) {
       this.stopSynth();
     } else {
@@ -187,6 +208,7 @@ export class AudioManager {
 
   // --- PROCEDURAL SYNTHWAVE / CYBER GENERATOR ---
   playProceduralDemo(genre = 'synthwave') {
+    this.mediaLoadId++;
     this.ensureContext();
     this.audioElement.pause();
     this.stopSynth();
