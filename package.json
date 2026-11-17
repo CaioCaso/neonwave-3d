@@ -1,0 +1,25 @@
+{
+  "name": "neon-visualizer-3d",
+  "version": "1.0.0",
+  "description": "Satisfying 3D Audio Visualizer with YouTube input and HD Video Export",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["threejs", "audio-visualizer", "youtube", "webgl", "video-export"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@distube/ytdl-core": "^5.2.1",
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "play-dl": "^1.9.7",
+    "three": "^0.174.0"
+  },
+  "devDependencies": {
+    "vite": "^6.2.0"
+  }
+}
