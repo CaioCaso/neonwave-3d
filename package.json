@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node server.js",
     "build": "vite build",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "postinstall": "node scripts/patch-ytdl-worker-timeout.js"
   },
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
