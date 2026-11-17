@@ -20,6 +20,9 @@ const currentTrack = {
 let selectedDurationSec = 0; // 0 = manual stop
 let selectedResolution = '1080p'; // '1080p' | '1080p-vertical' | 'native'
 let isZenMode = false;
+let youtubeMode = false;
+let youtubePlayer = null;
+let youtubeApiReady = null;
 
 // Lyrics State
 let lyricsOffset = 0; // seconds
@@ -42,6 +45,9 @@ let rawLyricsText = `[00:00.00] NEONWAVE 3D INITIATED
 const youtubeForm = document.getElementById('youtube-form');
 const youtubeUrlInput = document.getElementById('youtube-url-input');
 const btnLoadYoutube = document.getElementById('btn-load-youtube');
+const youtubePlayerPanel = document.getElementById('youtube-player-panel');
+const youtubePlayerFrame = document.getElementById('youtube-player-frame');
+const btnConnectYoutubeAudio = document.getElementById('btn-connect-youtube-audio');
 const loadBtnText = document.getElementById('load-btn-text');
 const loadSpinner = document.getElementById('load-spinner');
 const demoSelect = document.getElementById('demo-select');
@@ -254,6 +260,15 @@ async function loadYouTubeTrack(url) {
   visualizer.clearLyrics({ title: 'Carregando...', artist: '' });
 
   try {
+    const videoId = extractYouTubeId(url);
+    if (!videoId) throw new Error('Link do YouTube inválido.');
+    audioManager.stopTabCapture();
+    audioManager.pause();
+    youtubeMode = true;
+    youtubePlayer = null;
+    youtubePlayerPanel.classList.remove('hidden');
+    youtubePlayerPanel.classList.add('flex');
+    youtubePlayerFrame.innerHTML = '<div id="youtube-player" class="w-full h-full"></div>';
     const infoRes = await fetch(`/api/info?url=${encodeURIComponent(url.trim())}`);
     if (!infoRes.ok) {
       const err = await infoRes.json();
@@ -269,9 +284,8 @@ async function loadYouTubeTrack(url) {
     // Auto-search synchronized lyrics for the NEW song
     fetchLyricsForTrack(info.title, info.author);
 
-    const streamUrl = `/api/stream?url=${encodeURIComponent(url.trim())}`;
-    const playbackStarted = await audioManager.loadUrl(streamUrl);
-    if (playbackStarted) updatePlayPauseIcons(true);
+    await loadYouTubePlayer(videoId);
+    updatePlayPauseIcons(false);
   } catch (error) {
     console.error('Falha ao carregar YouTube:', error);
     alert(`Erro ao processar link do YouTube: ${error.message}\n\nDica: você também pode usar o botão "Subir Áudio" ou testar as "Músicas Demo"!`);
@@ -282,6 +296,104 @@ async function loadYouTubeTrack(url) {
     btnPlayPause.disabled = false;
   }
 }
+
+function extractYouTubeId(value) {
+  try {
+    const parsed = new URL(value.trim());
+    if (parsed.hostname === 'youtu.be') return parsed.pathname.slice(1).split('/')[0] || null;
+    if (parsed.hostname.endsWith('youtube.com')) {
+      if (parsed.pathname === '/watch') return parsed.searchParams.get('v');
+      return parsed.pathname.match(/^\/(?:embed|shorts|live)\/([^/?]+)/)?.[1] || null;
+    }
+  } catch {}
+  return null;
+}
+
+function loadYouTubePlayer(videoId) {
+  if (window.YT?.Player) return createYouTubePlayer(videoId);
+  if (!youtubeApiReady) {
+    youtubeApiReady = new Promise((resolve) => {
+      const previousCallback = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        previousCallback?.();
+        resolve();
+      };
+      const script = document.createElement('script');
+      script.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(script);
+    });
+  }
+  return youtubeApiReady.then(() => createYouTubePlayer(videoId));
+}
+
+function createYouTubePlayer(videoId) {
+  return new Promise((resolve, reject) => {
+    try {
+      youtubePlayer = new window.YT.Player('youtube-player', {
+        videoId,
+        width: '100%',
+        height: '100%',
+        playerVars: { controls: 1, playsinline: 1, origin: location.origin },
+        events: {
+          onReady: () => resolve(),
+          onStateChange: (event) => {
+            const playing = event.data === window.YT.PlayerState.PLAYING;
+            updatePlayPauseIcons(playing);
+            if (playing) startYouTubeClock();
+            else if (youtubeClock) clearInterval(youtubeClock);
+          },
+          onError: (event) => {
+            console.warn('YouTube player error:', event.data);
+            const reason = event.data === 101 || event.data === 150
+              ? 'Este vídeo não permite reprodução incorporada. Tente outra música do YouTube.'
+              : 'O YouTube não conseguiu reproduzir este vídeo. Verifique se ele está disponível para sua região/conta.';
+            btnConnectYoutubeAudio.textContent = reason;
+          }
+        }
+      });
+    } catch (error) { reject(error); }
+  });
+}
+
+let youtubeClock = null;
+function startYouTubeClock() {
+  if (youtubeClock) clearInterval(youtubeClock);
+  youtubeClock = setInterval(() => {
+    if (!youtubePlayer || !youtubeMode) return;
+    const current = youtubePlayer.getCurrentTime() || 0;
+    const total = youtubePlayer.getDuration() || 0;
+    timeCurrent.textContent = formatTime(current);
+    timeTotal.textContent = total > 0 ? formatTime(total) : 'LIVE';
+    audioScrubber.value = total > 0 ? (current / total) * 100 : 0;
+  }, 250);
+}
+
+function clearYouTubePlayback() {
+  youtubeMode = false;
+  if (youtubeClock) clearInterval(youtubeClock);
+  youtubeClock = null;
+  youtubePlayer?.stopVideo?.();
+  youtubePlayer = null;
+  youtubePlayerPanel.classList.add('hidden');
+  youtubePlayerPanel.classList.remove('flex');
+  audioManager.stopTabCapture();
+}
+
+btnConnectYoutubeAudio.addEventListener('click', async () => {
+  btnConnectYoutubeAudio.disabled = true;
+  btnConnectYoutubeAudio.textContent = 'Aguardando seleção da guia…';
+  try {
+    await audioManager.captureCurrentTabAudio();
+    btnConnectYoutubeAudio.textContent = 'Áudio conectado • visualizador ativo';
+    btnConnectYoutubeAudio.classList.add('text-emerald-300');
+  } catch (error) {
+    console.error('Não foi possível capturar o áudio da guia:', error);
+    alert(error.message || 'Não foi possível conectar o áudio desta guia.');
+    btnConnectYoutubeAudio.textContent = 'Conectar áudio desta aba ao visualizador';
+  } finally {
+    btnConnectYoutubeAudio.disabled = false;
+  }
+});
 
 youtubeForm.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -294,6 +406,7 @@ youtubeForm.addEventListener('submit', (e) => {
 demoSelect.addEventListener('change', (e) => {
   const genre = e.target.value;
   if (!genre) return;
+  clearYouTubePlayback();
 
   if (genre === 'synthwave-retro') {
     updateTrackHUD(
@@ -334,6 +447,7 @@ demoSelect.addEventListener('change', (e) => {
 fileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
+  clearYouTubePlayback();
 
   const fileName = file.name.replace(/\.[^/.]+$/, '');
   updateTrackHUD(
@@ -367,15 +481,25 @@ function updatePlayPauseIcons(isPlaying) {
 }
 
 btnPlayPause.addEventListener('click', () => {
+  if (youtubeMode && youtubePlayer) {
+    if (youtubePlayer.getPlayerState() === window.YT.PlayerState.PLAYING) youtubePlayer.pauseVideo();
+    else youtubePlayer.playVideo();
+    return;
+  }
   const isPlaying = audioManager.togglePlay();
   updatePlayPauseIcons(isPlaying);
 });
 
 volumeSlider.addEventListener('input', (e) => {
+  if (youtubeMode && youtubePlayer) {
+    youtubePlayer.setVolume(Math.round(parseFloat(e.target.value) * 100));
+    return;
+  }
   audioManager.setVolume(parseFloat(e.target.value));
 });
 
 audioManager.onTimeUpdate = (current, total) => {
+  if (youtubeMode) return;
   timeCurrent.textContent = formatTime(current);
   if (total > 0) {
     timeTotal.textContent = formatTime(total);
@@ -384,6 +508,11 @@ audioManager.onTimeUpdate = (current, total) => {
 };
 
 audioScrubber.addEventListener('input', (e) => {
+  if (youtubeMode && youtubePlayer) {
+    const duration = youtubePlayer.getDuration();
+    if (duration > 0) youtubePlayer.seekTo((parseFloat(e.target.value) / 100) * duration, true);
+    return;
+  }
   if (audioManager.audioElement.duration) {
     const seekTime = (parseFloat(e.target.value) / 100) * audioManager.audioElement.duration;
     audioManager.seek(seekTime);

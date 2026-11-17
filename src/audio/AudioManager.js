@@ -10,6 +10,8 @@ export class AudioManager {
     this.audioElement = new Audio();
     this.audioElement.crossOrigin = 'anonymous';
     this.audioSource = null;
+    this.captureSource = null;
+    this.capturedStream = null;
     this.streamDestination = null;
     this.gainNode = null;
     this.micStream = null;
@@ -84,7 +86,9 @@ export class AudioManager {
     try {
       this.audioSource = this.audioCtx.createMediaElementSource(this.audioElement);
       this.audioSource.connect(this.analyser);
-      this.analyser.connect(this.gainNode);
+      // The analyser is a tap only. Keep output routing separate so captured
+      // tab audio can be analysed without playing a delayed duplicate.
+      this.audioSource.connect(this.gainNode);
       this.gainNode.connect(this.audioCtx.destination);
       this.gainNode.connect(this.streamDestination);
     } catch (e) {
@@ -96,6 +100,39 @@ export class AudioManager {
     this.init();
     if (this.audioCtx.state === 'suspended') {
       this.audioCtx.resume();
+    }
+  }
+
+  async captureCurrentTabAudio() {
+    this.ensureContext();
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      throw new Error('Seu navegador não permite capturar o áudio desta aba.');
+    }
+    this.stopTabCapture();
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+    const audioTracks = stream.getAudioTracks();
+    if (!audioTracks.length) {
+      stream.getTracks().forEach(track => track.stop());
+      throw new Error('Na janela de compartilhamento, escolha esta aba e marque “Compartilhar áudio da aba”.');
+    }
+    this.capturedStream = stream;
+    this.captureSource = this.audioCtx.createMediaStreamSource(stream);
+    this.captureSource.connect(this.analyser);
+    this.captureSource.connect(this.streamDestination);
+    stream.getTracks().forEach(track => track.addEventListener('ended', () => {
+      if (track.kind === 'video') this.stopTabCapture();
+    }, { once: true }));
+    return true;
+  }
+
+  stopTabCapture() {
+    if (this.captureSource) {
+      try { this.captureSource.disconnect(); } catch {}
+      this.captureSource = null;
+    }
+    if (this.capturedStream) {
+      this.capturedStream.getTracks().forEach(track => track.stop());
+      this.capturedStream = null;
     }
   }
 
@@ -218,6 +255,7 @@ export class AudioManager {
     this.synthGain = ctx.createGain();
     this.synthGain.gain.value = 0.7;
     this.synthGain.connect(this.analyser);
+    this.synthGain.connect(this.gainNode);
     this.synthGain.connect(this.streamDestination);
 
     const bpm = genre === 'cyber-bass' ? 135 : (genre === 'quantum-ambient' ? 96 : 124);

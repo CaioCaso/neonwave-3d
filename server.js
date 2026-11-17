@@ -65,34 +65,26 @@ app.get('/api/info', async (req, res) => {
   const fullUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
   try {
-    // Try Ytdl getInfo first for full details
-    try {
-      const info = await ytdl.getInfo(fullUrl);
-      const details = info.videoDetails;
+    // Metadata does not require extracting or downloading the protected media.
+    const oembed = await fetchOEmbed(fullUrl);
+    if (oembed) {
       return res.json({
         id: videoId,
-        title: details.title || 'Música do YouTube',
-        author: details.author?.name || details.ownerChannelName || 'Artista',
-        thumbnail: details.thumbnails?.[details.thumbnails.length - 1]?.url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-        duration: parseInt(details.lengthSeconds || '0', 10),
+        title: oembed.title || 'Música do YouTube',
+        author: oembed.author_name || 'Artista',
+        thumbnail: oembed.thumbnail_url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+        duration: 0,
         url: fullUrl
       });
-    } catch (ytdlErr) {
-      console.warn('ytdl.getInfo fallback to oEmbed:', ytdlErr.message);
-      // Fallback to oEmbed
-      const oembed = await fetchOEmbed(fullUrl);
-      if (oembed) {
-        return res.json({
-          id: videoId,
-          title: oembed.title || 'Música do YouTube',
-          author: oembed.author_name || 'Artista',
-          thumbnail: oembed.thumbnail_url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-          duration: 0,
-          url: fullUrl
-        });
-      }
-      throw ytdlErr;
     }
+    return res.json({
+      id: videoId,
+      title: 'Música do YouTube',
+      author: 'YouTube',
+      thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+      duration: 0,
+      url: fullUrl
+    });
   } catch (error) {
     console.error('Error fetching info:', error);
     res.status(500).json({
