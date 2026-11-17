@@ -1,56 +1,58 @@
 # 🌌 NEONWAVE 3D - Audio Visualizer & 1080p Video Studio
 
 > **Criado por [Caio Caso](https://github.com/CaioCaso)**  
-> **Repositório Oficial**: [https://github.com/CaioCaso/neonwave-3d](https://github.com/CaioCaso/neonwave-3d)
+> 🌐 **Site Oficial no Ar**: **[https://neonwave-3d.onrender.com](https://neonwave-3d.onrender.com)**
 
-Visualizador de áudio 3D procedural hipnótico e satisfatório com entrada via YouTube, suporte a letras 3D sincronizadas (Kinetic Lyrics), detecção precisa de batidas/kick drum e gravação de vídeo em **1080p Full HD (60 FPS)** — **0% de tokens de IA gastos**.
-
----
-
-## ☁️ Como Hospedar na Nuvem (Opção 1 - Render)
-
-O projeto está 100% configurado para o **Render** com o arquivo de blueprint `render.yaml`.
-
-### Deploy em 1 Clique no Render:
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/CaioCaso/neonwave-3d)
-
-### Ou Passo a Passo Manual no Render (100% Grátis):
-1. Acesse **[dashboard.render.com](https://dashboard.render.com)** e faça login com sua conta do GitHub.
-2. Clique no botão **New +** no canto superior e selecione **Web Service**.
-3. Escolha o seu repositório: **`CaioCaso/neonwave-3d`**.
-4. O Render detectará automaticamente as configurações:
-   - **Name**: `neonwave-3d`
-   - **Runtime**: `Node`
-   - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npm start`
-   - **Instance Type**: `Free`
-5. Clique em **Deploy Web Service**!
-6. Em cerca de 1 a 2 minutos, seu visualizador estará no ar com HTTPS gratuito, acessível por qualquer pessoa pelo link:  
-   👉 **`https://neonwave-3d.onrender.com`** *(ou o subdomínio que você escolher no Render)*.
+Um visualizador de áudio 3D procedural hipnótico e altamente satisfatório com suporte a músicas do **YouTube**, letras 3D cinéticas sincronizadas (**3D Kinetic Lyrics**), detecção precisa de batidas/kick drum e download direto de vídeo em **1080p Full HD (60 FPS)** — **0% de tokens de IA gastos**.
 
 ---
 
-## 💻 Como Rodar no seu Computador (Opção 2 - Localhost)
+## 🚀 Acesse a Ferramenta Online (Opção Principal)
+
+Você não precisa instalar nada para começar a usar:
+
+👉 **[CLIQUE AQUI PARA ABRIR O NEONWAVE 3D](https://neonwave-3d.onrender.com)**
+
+Basta abrir o link acima em qualquer navegador (no PC, tablet ou celular) para:
+1. Colar links do YouTube ou subir suas próprias músicas.
+2. Explorar os 6 cenários gráficos 3D e 5 paletas de cores neon.
+3. Acompanhar as letras sincronizadas flutuando em 3D.
+4. Gravar e baixar seus vídeos em **1080p HD (16:9 ou 9:16 Shorts/Reels)** prontos para compartilhar nas redes sociais!
+
+---
+
+## 💻 Como Rodar no seu Computador (Opção 2 - Local / Offline)
+
+Caso você prefira rodar a ferramenta diretamente no seu computador para uso local ou sem internet:
 
 ### No Windows (1 Clique)
-Basta dar dois cliques no arquivo:
+Basta dar **dois cliques** no arquivo executável:
 ```
 iniciar.bat
 ```
-Ele iniciará o servidor e abrirá o navegador em `http://localhost:3000`.
+Ele iniciará o servidor local e abrirá automaticamente o navegador em `http://localhost:3000`.
 
 ### Via Terminal (Linux, Mac, Windows)
+1. Clone o repositório:
 ```bash
 git clone https://github.com/CaioCaso/neonwave-3d.git
 cd neonwave-3d
+```
+
+2. Instale as dependências:
+```bash
 npm install
+```
+
+3. Inicie a aplicação:
+```bash
 npm start
 ```
-Acesse no navegador: **`http://localhost:3000`**
+Acesse no seu navegador: **`http://localhost:3000`**
 
 ---
 
-## ✨ Funcionalidades
+## ✨ Principais Funcionalidades
 
 - 🎵 **Músicas via YouTube**: Cole qualquer link do YouTube (`watch?v=...` ou `youtu.be/...`) e o áudio é transmitido em tempo real sem problemas de CORS na Web Audio API.
 - 🎤 **3D Kinetic Lyrics (Lyric Video Studio)**:
