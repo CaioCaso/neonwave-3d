@@ -66,6 +66,7 @@ const btnToggleSettings = document.getElementById('btn-toggle-settings');
 const btnCloseSettings = document.getElementById('btn-close-settings');
 const btnFullscreen = document.getElementById('btn-fullscreen');
 const btnZenMode = document.getElementById('btn-zen-mode');
+const btnFloatingEye = document.getElementById('btn-floating-eye');
 
 const btnRecordVideo = document.getElementById('btn-record-video');
 const recordBtnText = document.getElementById('record-btn-text');
@@ -532,7 +533,6 @@ btnCloseModal.addEventListener('click', closeModal);
 btnModalDismiss.addEventListener('click', closeModal);
 
 // ----------------- ZEN MODE / HIDE HUD -----------------
-const btnFloatingEye = document.getElementById('btn-floating-eye');
 const floatingEyeOpen = document.getElementById('floating-eye-open');
 const floatingEyeClosed = document.getElementById('floating-eye-closed');
 const floatingEyeText = document.getElementById('floating-eye-text');
@@ -556,6 +556,8 @@ function toggleZenMode() {
 
   // Atualiza o botão flutuante de olho (que permanece sempre visível!)
   if (btnFloatingEye) {
+    btnFloatingEye.setAttribute('aria-pressed', String(isZenMode));
+    btnFloatingEye.setAttribute('aria-label', isZenMode ? 'Mostrar interface' : 'Ocultar interface');
     if (isZenMode) {
       floatingEyeOpen?.classList.add('hidden');
       floatingEyeClosed?.classList.remove('hidden');

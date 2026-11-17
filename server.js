@@ -119,13 +119,19 @@ app.get('/api/stream', async (req, res) => {
   try {
     console.log(`[Stream] Iniciando stream de áudio para: ${videoId}`);
 
-    const stream = ytdl.download(fullUrl, {
-      filter: f => f.hasAudio && !f.hasVideo,
+    const info = await ytdl.getInfo(fullUrl);
+    const format = chooseFormat(info.formats, {
       quality: 'highestaudio',
+      filter: f => f.hasAudio && !f.hasVideo
+    });
+    const stream = ytdl.download(info, {
+      format,
       highWaterMark: 1 << 22 // 4MB buffer for smooth streaming
     });
 
-    res.setHeader('Content-Type', 'audio/mp4');
+    // Match the response MIME type to the actual container selected by YouTube.
+    const contentType = format.mimeType || (format.container === 'mp4' ? 'audio/mp4' : 'audio/webm');
+    res.setHeader('Content-Type', contentType);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Accept-Ranges', 'bytes');
     res.setHeader('Cache-Control', 'no-cache');
